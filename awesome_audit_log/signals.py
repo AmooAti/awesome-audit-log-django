@@ -49,13 +49,7 @@ def _audit_post_save(sender, instance, created, **kwargs):
         "changes": dumps(diff_dicts(before, after)),
     }
 
-    ctx = get_request_ctx()
-    if ctx:
-        payload.update({
-            "entry_point": ctx.entry_point, "route": ctx.route, "path": ctx.path,
-            "method": ctx.method, "ip": ctx.ip, "user_id": ctx.user_id,
-            "user_name": ctx.user_name, "user_agent": ctx.user_agent,
-        })
+    payload = _complete_request_data(payload)
 
     insert_log_row(sender, payload)
 
@@ -71,11 +65,22 @@ def _audit_pre_delete(sender, instance, **kwargs):
         "after": dumps(None),
         "changes": dumps({k: {"from": v, "to": None} for k, v in (before or {}).items()}),
     }
+
+    payload = _complete_request_data(payload)
+
+    insert_log_row(sender, payload)
+
+def _complete_request_data(payload: dict[str, str]):
     ctx = get_request_ctx()
     if ctx:
         payload.update({
-            "entry_point": ctx.entry_point, "route": ctx.route, "path": ctx.path,
-            "method": ctx.method, "ip": ctx.ip, "user_id": ctx.user_id,
-            "user_name": ctx.user_name, "user_agent": ctx.user_agent,
+            "entry_point": ctx.entry_point,
+            "route": ctx.route,
+            "path": ctx.path,
+            "method": ctx.method,
+            "ip": ctx.ip,
+            "user_id": ctx.user_id,
+            "user_name": ctx.user_name,
+            "user_agent": ctx.user_agent,
         })
-    insert_log_row(sender, payload)
+    return payload
