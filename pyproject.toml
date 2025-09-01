@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{ include = "awesome_audit_log" }]
 keywords = ["django", "audit", "logging", "audit-log", "log", "changes", "databse-changes"]
 homepage = "https://github.com/AmooAti/awesome-audit-log-django"
-repository = "https://github.com/AmooAti/awesome-audit-log-django
+repository = "https://github.com/AmooAti/awesome-audit-log-django"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
