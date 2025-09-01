@@ -1,5 +1,5 @@
-import json, re
-from typing import List, Dict
+import json
+import re
 
 import pytest
 from django.db import connection, connections
@@ -10,7 +10,7 @@ LOG_TABLE_REGEX = re.compile(r".*_log$")
 def _truncate_dynamic_log_tables(db):
     """Automatically clean up audit log tables before each test."""
     # Clean up before the test runs
-    for alias, conn in connections.databases.items():
+    for alias, _conn in connections.databases.items():
         with connections[alias].cursor() as c:
             vendor = connections[alias].vendor
             if vendor == "sqlite":
@@ -20,7 +20,13 @@ def _truncate_dynamic_log_tables(db):
                 c.execute("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
                 tables = [row[0] for row in c.fetchall()]
             elif vendor == "mysql":
-                c.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()")
+                c.execute(
+                    """
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = DATABASE()
+                    """
+                )
                 tables = [row[0] for row in c.fetchall()]
             else:
                 tables = []
@@ -35,10 +41,10 @@ def _truncate_dynamic_log_tables(db):
                             c.execute(f"DROP TABLE IF EXISTS {t}")
                     except Exception:
                         pass  # Table might not exist
-    
+
     yield
 
-def fetch_logs_for(base_table: str) -> List[Dict]:
+def fetch_logs_for(base_table: str) -> list[dict]:
     table = f"{base_table}_log"
     sql = f"""
           SELECT action, object_pk, before, after, changes,
@@ -47,17 +53,29 @@ def fetch_logs_for(base_table: str) -> List[Dict]:
           ORDER BY rowid DESC
         """
     try:
-        with connection.cursor() as c:
+        with (connection.cursor() as c):
             c.execute(sql)
-            cols = [col[0] for col in c.cursor.description] if hasattr(c, 'cursor') else [d[0] for d in c.cursor.description]
+            cols = (
+                [col[0] for col in c.cursor.description]
+                if hasattr(c, 'cursor')
+                else [d[0] for d in c.cursor.description]
+            )
             rows = c.fetchall()
     except Exception:
         return []
 
     out = []
     for r in rows:
-        rec = dict(zip(cols, r))
-        for k in ('before', 'after', 'changes'): # , 'entry_point', 'route', 'path', 'method',)
+        rec = dict(zip(cols, r, strict=False))
+        for k in (
+                'before',
+                'after',
+                'changes',
+                'entry_point',
+                'route',
+                'path',
+                'method'
+        ):
             v = rec.get(k)
             if isinstance(v, str):
                 try:

@@ -1,8 +1,7 @@
-from typing import Any
-
 import datetime as dt
 import decimal
 import json
+from typing import Any
 
 from django.db import models
 
@@ -10,9 +9,9 @@ from django.db import models
 def _to_primitive(value: Any) -> Any:
     if value is None:
         return None
-    if isinstance(value, (str, int, float, bool)):
+    if isinstance(value, str | int | float | bool):
         return value
-    if isinstance(value, (dt.date, dt.datetime, dt.time)):
+    if isinstance(value, dt.date | dt.datetime | dt.time):
         return value.isoformat()
     if isinstance(value, decimal.Decimal):
         return float(value)
@@ -22,7 +21,10 @@ def serialize_instance(instance: models.Model) -> dict:
     """Serialize concrete fields of a model instance to a JSON-serializable dict."""
     data = {}
     for field in instance._meta.fields:
-        if getattr(field, "concrete", False) and not getattr(field, "many_to_many", False):
+        if (
+            getattr(field, "concrete", False)
+            and not getattr(field, "many_to_many", False)
+        ):
             name = field.attname if hasattr(field, "attname") else field.name
             try:
                 data[name] = _to_primitive(getattr(instance, name))

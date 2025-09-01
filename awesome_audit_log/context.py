@@ -1,20 +1,22 @@
 from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class RequestContext:
     entry_point: str # http, management, shell, celery
-    path: Optional[str] = None
-    route: Optional[str] = None
-    method: Optional[str] = None
-    ip: Optional[str] = None
-    user_id: Optional[int] = None
-    user_name: Optional[str] = None
-    user_agent: Optional[str] = None
+    path: str | None = None
+    route: str | None = None
+    method: str | None = None
+    ip: str | None = None
+    user_id: int | None = None
+    user_name: str | None = None
+    user_agent: str | None = None
 
-_ctx: ContextVar[Optional[RequestContext]] = ContextVar('awesome_audit_log_ctx', default=None)
+_ctx: ContextVar[RequestContext | None] = ContextVar(
+    'awesome_audit_log_ctx',
+    default=None
+)
 
 def set_request_ctx(ctx: RequestContext):
     _ctx.set(ctx)
@@ -22,7 +24,7 @@ def set_request_ctx(ctx: RequestContext):
 def clear_request_ctx():
     _ctx.set(None)
 
-def get_request_ctx(default: Optional[RequestContext] = None) -> Optional[RequestContext]:
+def get_request_ctx(default: RequestContext | None = None) -> RequestContext | None:
     try:
         return _ctx.get()
     except KeyError:

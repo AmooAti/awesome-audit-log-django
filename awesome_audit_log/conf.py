@@ -4,11 +4,15 @@ DEFAULTS = {
     "ENABLED": True,
     "DATABASE_ALIAS": "default",
     "ASYNC": False,
-    "AUDIT_MODELS": "all", # "all" or list like ["app.ModelA", "app.ModelB"]
+    # "all" or list like ["app_label.ModelA", "app.ModelB"]
+    "AUDIT_MODELS": "all",
     "CAPTURE_HTTP": True,
-
-    "FALLBACK_TO_DEFAULT": False,  # if audit alias missing/unavailable, use 'default' intentionally
-    "RAISE_ERROR_IF_DB_UNAVAILABLE": False,  # if unavailable, silently skip logging (with a warning) instead of raising
+    # set to False means if audit db is unavailable,
+    # silently skip logging (with a warning) instead of raising
+    "RAISE_ERROR_IF_DB_UNAVAILABLE": False,
+    # if audit alias missing/unavailable, use 'default' intentionally,
+    # this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
+    "FALLBACK_TO_DEFAULT": False,
 }
 
 def get_setting(key):

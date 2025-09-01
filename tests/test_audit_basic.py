@@ -1,9 +1,9 @@
 from django.db import connection
-from django.test import TransactionTestCase, override_settings, modify_settings
+from django.test import TransactionTestCase, override_settings
 
 from tests.conftest import fetch_logs_for
 from tests.settings import AWESOME_AUDIT_LOG
-from tests.testapp.models import Widget, Category
+from tests.testapp.models import Category, Widget
 
 
 class TestAuditBasic(TransactionTestCase):
@@ -12,14 +12,28 @@ class TestAuditBasic(TransactionTestCase):
     def test_log_table_created_on_first_user(self):
         # Ensure the log table does not exist initially
         with connection.cursor() as c:
-            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='widget_log'")
+            c.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type='table'
+                AND name='widget_log'
+                """
+            )
             self.assertIsNone(c.fetchone())
 
         w = Widget.objects.create(name="H", qty=1)
 
         # Now the log table must exist and have an 'insert' row
         with connection.cursor() as c:
-            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='widget_log'")
+            c.execute(
+                """
+                SELECT name
+                FROM sqlite_master
+                WHERE type='table'
+                  AND name='widget_log'
+                """
+            )
             self.assertIsNotNone(c.fetchone())
 
         logs = fetch_logs_for("widget")
@@ -45,7 +59,12 @@ class TestAuditBasic(TransactionTestCase):
         self.assertIn("delete", actions)
 
         # Update
-        update_rows = [r for r in logs if r["action"] == "update" and r["object_pk"] == str(pk)]
+        update_rows = [
+            r
+            for r in logs
+            if r["action"] == "update"
+               and r["object_pk"] == str(pk)
+        ]
         self.assertTrue(update_rows)
         diff = update_rows[0]["changes"]
         self.assertIn("qty", diff)
@@ -53,7 +72,12 @@ class TestAuditBasic(TransactionTestCase):
         self.assertEqual(diff["qty"]["to"], 5)
 
         # Delete
-        del_rows = [r for r in logs if r["action"] == "delete" and r["object_pk"] == str(pk)]
+        del_rows = [
+            r
+            for r in logs
+            if r["action"] == "delete"
+               and r["object_pk"] == str(pk)
+        ]
         self.assertTrue(del_rows)
         self.assertIsNone(del_rows[0]["after"])
         self.assertEqual(del_rows[0]["before"]["name"], "B")
@@ -66,23 +90,41 @@ class TestAuditBasic(TransactionTestCase):
         pk = w.pk
 
         logs = fetch_logs_for("widget")
-        update_rows = [r for r in logs if r["action"] == "update" and r["object_pk"] == str(pk)]
+        update_rows = [
+            r
+            for r in logs
+            if r["action"] == "update"
+               and r["object_pk"] == str(pk)
+        ]
         self.assertIn("qty", update_rows[0]['changes'])
         self.assertNotIn('name', update_rows[0]['changes'])
 
     @override_settings(
-        AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "AUDIT_MODELS": ["tests_testapp.category"]}
+        AWESOME_AUDIT_LOG={
+            **AWESOME_AUDIT_LOG,
+            "AUDIT_MODELS": ["tests_testapp.category"]
+        }
     )
     def test_only_selected_models_are_logged(self):
         widget = Widget.objects.create(name="C", qty=2)
         category = Category.objects.create(name="B")
 
         widget_logs = fetch_logs_for("widget")
-        widget_logs = [r for r in widget_logs if r['action'] == 'insert' and r['object_pk'] == str(widget.pk)]
+        widget_logs = [
+            r
+            for r in widget_logs
+            if r['action'] == 'insert'
+               and r['object_pk'] == str(widget.pk)
+        ]
 
         category_logs = fetch_logs_for(Category._meta.db_table)
 
-        category_logs = [r for r in category_logs if r['action'] == 'insert' and r['object_pk'] == str(category.pk)]
+        category_logs = [
+            r
+            for r in category_logs
+            if r['action'] == 'insert'
+               and r['object_pk'] == str(category.pk)
+        ]
         self.assertEqual(len(widget_logs), 0)
         self.assertEqual(len(category_logs), 1)
 

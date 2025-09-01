@@ -1,10 +1,8 @@
 import json
 
-from django.conf.global_settings import APPEND_SLASH
-from django.contrib.auth import get_user_model
-from django.test import TransactionTestCase, Client, override_settings
 from conftest import fetch_logs_for
-from tests.testapp.models import Widget
+from django.contrib.auth import get_user_model
+from django.test import Client, TransactionTestCase
 
 User = get_user_model()
 

@@ -47,9 +47,12 @@ AWESOME_AUDIT_LOG = {
     "ENABLED": True,
     "DATABASE_ALIAS": "default",
     "ASYNC": False,
-    "AUDIT_MODELS": "all", # "all" or list like ["app_label.ModelA", "app.ModelB"]
+    # "all" or list like ["app_label.ModelA", "app.ModelB"]
+    "AUDIT_MODELS": "all",
     "CAPTURE_HTTP": True,
-    "RAISE_ERROR_IF_DB_UNAVAILABLE": False,  # set to False means if audit db is unavailable, silently skip logging (with a warning) instead of raising
-    "FALLBACK_TO_DEFAULT": False,  # if audit alias missing/unavailable, use 'default' intentionally, this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
+    # set to False means if audit db is unavailable, silently skip logging (with a warning) instead of raising
+    "RAISE_ERROR_IF_DB_UNAVAILABLE": False,
+    # if audit alias missing/unavailable, use 'default' intentionally, this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
+    "FALLBACK_TO_DEFAULT": False,
 }
 ```

@@ -1,11 +1,11 @@
 import logging
 
-logger = logging.getLogger(__name__)
-
-from django.db import models, connections, transaction
+from django.db import connections, models, transaction
 from django.db.utils import ConnectionDoesNotExist, OperationalError
 
 from awesome_audit_log.conf import get_setting
+
+logger = logging.getLogger(__name__)
 
 class AuditDBIsNotAvailable(Exception):
     pass
@@ -39,13 +39,19 @@ def _get_connection():
         if get_setting('RAISE_ERROR_IF_DB_UNAVAILABLE'):
             raise AuditDBIsNotAvailable from e
         if connection.alias != 'default' and get_setting("FALLBACK_TO_DEFAULT"):
-            logger.warning("Audit fall backed to default because of operational error", exc_info=True)
+            logger.warning(
+                "Audit fall backed to default because of operational error",
+                exc_info=True
+            )
             connection = connections['default']
             try:
                 with connection.cursor() as cursor:
                     cursor.execute("SELECT 1")
             except OperationalError as e:
-                logger.critical("Unexpected error from audit db when fall backed to default", exc_info=True)
+                logger.critical(
+                    "Unexpected error from audit db when fall backed to default",
+                    exc_info=True
+                )
                 return None
         else:
             logger.warning("Audit db is not available", exc_info=True)

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from django.utils.deprecation import MiddlewareMixin
 from django.urls import resolve
+from django.utils.deprecation import MiddlewareMixin
+
 from awesome_audit_log.conf import get_setting
-from awesome_audit_log.context import set_request_ctx, RequestContext, clear_request_ctx
+from awesome_audit_log.context import RequestContext, clear_request_ctx, set_request_ctx
 
 
 def _client_ip(request):
@@ -23,7 +24,7 @@ class RequestEntryPointMiddleware(MiddlewareMixin):
         try:
             resolver_match = resolve(request.path_info)
             route = resolver_match.view_name
-        except:
+        except Exception:
             route = None
         user = getattr(request, "user", None)
         user_id = user.pk if getattr(user, 'is_authenticated', None) else None

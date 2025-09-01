@@ -1,11 +1,11 @@
 from django.db import models
-from django.db.models.signals import pre_save, post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
 from awesome_audit_log.conf import get_setting
 from awesome_audit_log.context import get_request_ctx
 from awesome_audit_log.db import insert_log_row
-from awesome_audit_log.utils import serialize_instance, dumps, diff_dicts
+from awesome_audit_log.utils import diff_dicts, dumps, serialize_instance
 
 
 def _should_audit_model(model: models.Model) -> bool:
@@ -63,7 +63,12 @@ def _audit_pre_delete(sender, instance, **kwargs):
         "object_pk": str(instance.pk),
         "before": dumps(before),
         "after": dumps(None),
-        "changes": dumps({k: {"from": v, "to": None} for k, v in (before or {}).items()}),
+        "changes": dumps(
+            {
+                k: {"from": v, "to": None}
+                for k, v in (before or {}).items()
+            }
+        ),
     }
 
     payload = _complete_request_data(payload)

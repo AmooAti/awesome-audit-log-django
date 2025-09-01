@@ -18,6 +18,7 @@ Django = ">=4.2"
 pytest = "^8.3"
 pytest-django = "^4.9"
 psycopg = {extras = ["binary"], version = "^3.2.9"}
+ruff = "^0.12.11"
 coverage = "^7.10.6"
 
 [build-system]
