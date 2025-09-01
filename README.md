@@ -6,6 +6,8 @@ Having a single model/table as audit storage can cause heavy db operation and us
 
 With this package you will have each model log in a separate table which can be beneficial if you want to truncate a specific model logs or run a query on them.
 
+You can choose between having logs table in your default database or adding a new backend db as logs db.
+
 Supported DBs to store logs:
 1. PostgreSQL
 2. MySQL
