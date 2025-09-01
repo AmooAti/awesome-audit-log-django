@@ -325,4 +325,5 @@ cython_debug/
 
 #####
 example/audit.sqlite3
+tests/testdb.sqlite3
 
