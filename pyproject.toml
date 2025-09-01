@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "awesome-audit-log-django"
+version = "0.1.0"
+description = "Per-model audit logs to TABLENAME_log with entry-point capture (HTTP/management/shell/celery)"
+authors = ["AmooAti <adhamiamirhossein@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "awesome_audit_log" }]
+keywords = ["django", "audit", "logging", "audit-log", "log", "changes", "databse-changes"]
+homepage = "https://github.com/AmooAti/awesome-audit-log-django"
+repository = "https://github.com/AmooAti/awesome-audit-log-django
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+Django = ">=4.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3"
+pytest-django = "^4.9"
+psycopg = {extras = ["binary"], version = "^3.2.9"}
+coverage = "^7.10.6"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
