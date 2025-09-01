@@ -2,7 +2,7 @@ from django.db import connection
 from django.test import TransactionTestCase, override_settings, modify_settings
 
 from tests.conftest import fetch_logs_for
-from tests.settings import AWESOMELOGAUDIT
+from tests.settings import AWESOME_AUDIT_LOG
 from tests.testapp.models import Widget, Category
 
 
@@ -71,7 +71,7 @@ class TestAuditBasic(TransactionTestCase):
         self.assertNotIn('name', update_rows[0]['changes'])
 
     @override_settings(
-        AWESOMELOGAUDIT={**AWESOMELOGAUDIT, "AUDIT_MODELS": ["tests_testapp.category"]}
+        AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "AUDIT_MODELS": ["tests_testapp.category"]}
     )
     def test_only_selected_models_are_logged(self):
         widget = Widget.objects.create(name="C", qty=2)
