@@ -1,5 +1,7 @@
 # Awesome Audit Log for Django
 
+[![codecov](https://codecov.io/github/AmooAti/awesome-audit-log-django/graph/badge.svg?token=D5SCFRSM7H)](https://codecov.io/github/AmooAti/awesome-audit-log-django)
+
 This is an awesome package to have your models logs in corresponding _log tables.
 
 Having a single model/table as audit storage can cause heavy db operation and useless for large applications.
