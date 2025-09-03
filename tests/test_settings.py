@@ -10,5 +10,5 @@ from pytest import raises
 class TestSettings(TestCase):
     def test_raise_exception_when_default_is_wrong(self):
         with raises(AuditDBIsNotAvailable):
-            w = Widget.objects.create(name="Z", qty=9)
+            Widget.objects.create(name="Z", qty=9)
 
