@@ -4,7 +4,7 @@ from django.dispatch import receiver
 
 from awesome_audit_log.conf import get_setting
 from awesome_audit_log.context import get_request_ctx
-from awesome_audit_log.db import insert_log_row
+from awesome_audit_log.db import AuditDatabaseManager
 from awesome_audit_log.utils import diff_dicts, dumps, serialize_instance
 
 
@@ -51,7 +51,8 @@ def _audit_post_save(sender, instance, created, **kwargs):
 
     payload = _complete_request_data(payload)
 
-    insert_log_row(sender, payload)
+    _audit_database_manager = AuditDatabaseManager()
+    _audit_database_manager.insert_log_row(sender, payload)
 
 @receiver(pre_delete)
 def _audit_pre_delete(sender, instance, **kwargs):
@@ -73,7 +74,8 @@ def _audit_pre_delete(sender, instance, **kwargs):
 
     payload = _complete_request_data(payload)
 
-    insert_log_row(sender, payload)
+    _audit_database_manager = AuditDatabaseManager()
+    _audit_database_manager.insert_log_row(sender, payload)
 
 def _complete_request_data(payload: dict[str, str]):
     ctx = get_request_ctx()
