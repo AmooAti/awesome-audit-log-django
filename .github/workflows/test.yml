@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    needs: [ lint ]
     strategy:
       fail-fast: true
       matrix:
