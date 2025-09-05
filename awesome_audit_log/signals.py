@@ -11,14 +11,18 @@ from awesome_audit_log.utils import diff_dicts, dumps, serialize_instance
 def _should_audit_model(model: models.Model) -> bool:
     if model._meta.app_label == "awesome_audit_log":
         return False
-    if not get_setting('ENABLED'):
+    if not get_setting("ENABLED"):
+        return False
+    models_opt_out = get_setting("NOT_AUDIT_MODELS")
+    label = f"{model._meta.app_label}.{model._meta.model_name}"
+    if models_opt_out and label in set(models_opt_out or []):
         return False
     models_opt = get_setting("AUDIT_MODELS")
     if models_opt == "all":
         return True
-    label = f"{model._meta.app_label}.{model._meta.model_name}"
     print(label in set(models_opt or []))
     return label in set(models_opt or [])
+
 
 @receiver(pre_save)
 def _audit_pre_save(sender, instance, **kwargs):
@@ -54,6 +58,7 @@ def _audit_post_save(sender, instance, created, **kwargs):
     _audit_database_manager = AuditDatabaseManager()
     _audit_database_manager.insert_log_row(sender, payload)
 
+
 @receiver(pre_delete)
 def _audit_pre_delete(sender, instance, **kwargs):
     if not _should_audit_model(sender):
@@ -65,10 +70,7 @@ def _audit_pre_delete(sender, instance, **kwargs):
         "before": dumps(before),
         "after": dumps(None),
         "changes": dumps(
-            {
-                k: {"from": v, "to": None}
-                for k, v in (before or {}).items()
-            }
+            {k: {"from": v, "to": None} for k, v in (before or {}).items()}
         ),
     }
 
@@ -77,17 +79,20 @@ def _audit_pre_delete(sender, instance, **kwargs):
     _audit_database_manager = AuditDatabaseManager()
     _audit_database_manager.insert_log_row(sender, payload)
 
+
 def _complete_request_data(payload: dict[str, str]):
     ctx = get_request_ctx()
     if ctx:
-        payload.update({
-            "entry_point": ctx.entry_point,
-            "route": ctx.route,
-            "path": ctx.path,
-            "method": ctx.method,
-            "ip": ctx.ip,
-            "user_id": ctx.user_id,
-            "user_name": ctx.user_name,
-            "user_agent": ctx.user_agent,
-        })
+        payload.update(
+            {
+                "entry_point": ctx.entry_point,
+                "route": ctx.route,
+                "path": ctx.path,
+                "method": ctx.method,
+                "ip": ctx.ip,
+                "user_id": ctx.user_id,
+                "user_name": ctx.user_name,
+                "user_agent": ctx.user_agent,
+            }
+        )
     return payload

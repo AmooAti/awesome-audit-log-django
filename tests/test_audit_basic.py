@@ -60,10 +60,7 @@ class TestAuditBasic(TransactionTestCase):
 
         # Update
         update_rows = [
-            r
-            for r in logs
-            if r["action"] == "update"
-               and r["object_pk"] == str(pk)
+            r for r in logs if r["action"] == "update" and r["object_pk"] == str(pk)
         ]
         self.assertTrue(update_rows)
         diff = update_rows[0]["changes"]
@@ -73,10 +70,7 @@ class TestAuditBasic(TransactionTestCase):
 
         # Delete
         del_rows = [
-            r
-            for r in logs
-            if r["action"] == "delete"
-               and r["object_pk"] == str(pk)
+            r for r in logs if r["action"] == "delete" and r["object_pk"] == str(pk)
         ]
         self.assertTrue(del_rows)
         self.assertIsNone(del_rows[0]["after"])
@@ -91,18 +85,15 @@ class TestAuditBasic(TransactionTestCase):
 
         logs = fetch_logs_for("widget")
         update_rows = [
-            r
-            for r in logs
-            if r["action"] == "update"
-               and r["object_pk"] == str(pk)
+            r for r in logs if r["action"] == "update" and r["object_pk"] == str(pk)
         ]
-        self.assertIn("qty", update_rows[0]['changes'])
-        self.assertNotIn('name', update_rows[0]['changes'])
+        self.assertIn("qty", update_rows[0]["changes"])
+        self.assertNotIn("name", update_rows[0]["changes"])
 
     @override_settings(
         AWESOME_AUDIT_LOG={
             **AWESOME_AUDIT_LOG,
-            "AUDIT_MODELS": ["tests_testapp.category"]
+            "AUDIT_MODELS": ["tests_testapp.category"],
         }
     )
     def test_only_selected_models_are_logged(self):
@@ -113,8 +104,7 @@ class TestAuditBasic(TransactionTestCase):
         widget_logs = [
             r
             for r in widget_logs
-            if r['action'] == 'insert'
-               and r['object_pk'] == str(widget.pk)
+            if r["action"] == "insert" and r["object_pk"] == str(widget.pk)
         ]
 
         category_logs = fetch_logs_for(Category._meta.db_table)
@@ -122,11 +112,24 @@ class TestAuditBasic(TransactionTestCase):
         category_logs = [
             r
             for r in category_logs
-            if r['action'] == 'insert'
-               and r['object_pk'] == str(category.pk)
+            if r["action"] == "insert" and r["object_pk"] == str(category.pk)
         ]
         self.assertEqual(len(widget_logs), 0)
         self.assertEqual(len(category_logs), 1)
 
+    @override_settings(
+        AWESOME_AUDIT_LOG={
+            **AWESOME_AUDIT_LOG,
+            "NOT_AUDIT_MODELS": ["tests_testapp.widget"],
+        }
+    )
+    def test_opt_out_models_not_logged(self):
+        widget = Widget.objects.create(name="C", qty=2)
+        widget_logs = fetch_logs_for("widget")
+        widget_logs = [
+            r
+            for r in widget_logs
+            if r["action"] == "insert" and r["object_pk"] == str(widget.pk)
+        ]
 
-
+        self.assertEqual(len(widget_logs), 0)

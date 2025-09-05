@@ -18,15 +18,14 @@ Supported DBs to store logs:
 This package is in its early stage development and the following features will be added ASAP:
 1. Utilizing celery tasks to store audit logs
 2. Release it!
-3. For now, you just can opt-in models with app_label. We should add a feature for opt-out and also using module path
-4. Log rotation
-5. Mongo DB support
-6. Add management, shell, celery as entry point of logs
-7. Document page!
-8. ✅ Fix dependencies versioning
-9. ✅ linter
-10. ✅ github actions
-
+3. Log rotation
+4. Mongo DB support
+5. Add management, shell, celery as entry point of logs
+6. Document page!
+7. ✅ Fix dependencies versioning
+8. ✅ linter
+9. ✅ github actions
+10. ✅ For now, you just can opt-in models with app_label. We should add a feature for opt-out and also using module path
 
 ## Compatible With 
 
@@ -61,6 +60,8 @@ AWESOME_AUDIT_LOG = {
     "ASYNC": False,
     # "all" or list like ["app_label.ModelA", "app.ModelB"]
     "AUDIT_MODELS": "all",
+    # like AUDIT_MODELS but for opt-out, useful when AUDIT_MODELS set to all
+    "NOT_AUDIT_MODELS": None,
     "CAPTURE_HTTP": True,
     # set to False means if audit db is unavailable, silently skip logging (with a warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": False,
