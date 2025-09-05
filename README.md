@@ -16,16 +16,26 @@ Supported DBs to store logs:
 3. SQLite
 
 This package is in its early stage development and the following features will be added ASAP:
-1. Fix dependencies versioning
-2. linter
-3. github actions
-4. Utilizing celery tasks to store audit logs
-5. Release it!
-6. For now, you just can opt-in models with app_label. We should add a feature for opt-out and also using module path
-7. Log rotation
-8. Mongo DB support
-9. Add management, shell, celery as entry point of logs
-10. Document page!
+1. Utilizing celery tasks to store audit logs
+2. Release it!
+3. For now, you just can opt-in models with app_label. We should add a feature for opt-out and also using module path
+4. Log rotation
+5. Mongo DB support
+6. Add management, shell, celery as entry point of logs
+7. Document page!
+8. ✅ Fix dependencies versioning
+9. ✅ linter
+10. ✅ github actions
+
+
+## Compatible With 
+
+This package works on the below listed Django, Python versions and Databases.
+
+- **Django versions**: 4.2, 5.0, 5.1
+- **Python versions**: 3.10, 3.11, 3.12
+- **Databases**: SQLite, PostgreSQL, MySQL
+
 
 ## Installation
 
@@ -57,4 +67,24 @@ AWESOME_AUDIT_LOG = {
     # if audit alias missing/unavailable, use 'default' intentionally, this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
     "FALLBACK_TO_DEFAULT": False,
 }
+```
+
+## Development
+
+### Preparation
+
+```bash
+# Install dependencies
+poetry install
+```
+
+### Running Tests and Linter Locally
+
+```bash
+# Run tests
+poetry run pytest
+
+# Run linting
+poetry run ruff check awesome_audit_log tests
+poetry run ruff format --check awesome_audit_log tests
 ```
