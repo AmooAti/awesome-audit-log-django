@@ -6,10 +6,13 @@ from tests.testapp.models import Widget
 from pytest import raises
 
 
-@override_settings(
-    AWESOME_AUDIT_LOG={'RAISE_ERROR_IF_DB_UNAVAILABLE': True, 'DATABASE_ALIAS': 'wrong'}
-)
 class TestSettings(TestCase):
+    @override_settings(
+        AWESOME_AUDIT_LOG={
+            'RAISE_ERROR_IF_DB_UNAVAILABLE': True,
+            'DATABASE_ALIAS': 'wrong'
+        }
+    )
     def test_raise_exception_when_db_alias_is_wrong(self):
         with raises(AuditDBIsNotAvailable):
             Widget.objects.create(name="Z", qty=9)
