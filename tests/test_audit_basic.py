@@ -134,3 +134,21 @@ class TestAuditBasic(TransactionTestCase):
         ]
 
         self.assertEqual(len(widget_logs), 0)
+
+    @override_settings(
+        AWESOME_AUDIT_LOG={
+            **AWESOME_AUDIT_LOG,
+            "NOT_AUDIT_MODELS": ["tests_testapp.widget"],
+        }
+    )
+    def test_opt_out_models_not_logged_for_deleted(self):
+        widget = Widget.objects.create(name="C", qty=2)
+        widget.delete()
+        widget_logs = fetch_logs_for("widget")
+        widget_logs = [
+            r
+            for r in widget_logs
+            if r["action"] == "delete" and r["object_pk"] == str(widget.pk)
+        ]
+
+        self.assertEqual(len(widget_logs), 0)
