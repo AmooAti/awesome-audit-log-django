@@ -1,41 +1,57 @@
-from django.db import connection
+import pytest
+from django.db import connections
 from django.test import TransactionTestCase, override_settings
 
 from tests.conftest import fetch_logs_for
-from tests.settings import AWESOME_AUDIT_LOG
 from tests.testapp.models import Category, Widget
+from settings import AWESOME_AUDIT_LOG
+
+mysqlclient_installed = True
+try:
+    import MySQLdb  # noqa: F401
+except Exception:
+    mysqlclient_installed = False
 
 
-class TestAuditBasic(TransactionTestCase):
+@pytest.mark.skipif(not mysqlclient_installed, reason="mysqlclient not installed")
+@override_settings(AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "DATABASE_ALIAS": "mysql"})
+class TestAuditMySQL(TransactionTestCase):
     reset_sequences = True
-    databases = ["default"]
+    databases = ["default", "mysql"]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Important: close old connections that may have been opened before the override
+        connections.close_all()
 
     def test_log_table_created_on_first_user(self):
         # Ensure the log table does not exist initially
-        with connection.cursor() as c:
+        conn = connections["mysql"]
+        with conn.cursor() as c:
             c.execute(
                 """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                AND name='widget_log'
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = 'widget_log'
                 """
             )
-            self.assertIsNone(c.fetchone())
+            self.assertEqual(c.fetchone()[0], 0)
 
         w = Widget.objects.create(name="H", qty=1)
 
         # Now the log table must exist and have an 'insert' row
-        with connection.cursor() as c:
+        with conn.cursor() as c:
             c.execute(
                 """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                  AND name='widget_log'
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = 'widget_log'
                 """
             )
-            self.assertIsNotNone(c.fetchone())
+            self.assertEqual(c.fetchone()[0], 1)
 
         logs = fetch_logs_for("widget")
         self.assertTrue(len(logs) >= 1)

@@ -1,4 +1,5 @@
-from django.db import connection
+import pytest
+from django.db import connections
 from django.test import TransactionTestCase, override_settings
 
 from tests.conftest import fetch_logs_for
@@ -6,36 +7,47 @@ from tests.settings import AWESOME_AUDIT_LOG
 from tests.testapp.models import Category, Widget
 
 
-class TestAuditBasic(TransactionTestCase):
-    reset_sequences = True
-    databases = ["default"]
+psycopg_installed = True
+try:
+    import psycopg  # noqa: F401
+except Exception:
+    try:
+        import psycopg2  # noqa: F401
+    except Exception:
+        psycopg_installed = False
 
-    def test_log_table_created_on_first_user(self):
-        # Ensure the log table does not exist initially
-        with connection.cursor() as c:
-            c.execute(
-                """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                AND name='widget_log'
-                """
+
+@pytest.mark.skipif(not psycopg_installed, reason="psycopg/psycopg2 not installed")
+@pytest.mark.django_db(databases=["postgres"])
+@override_settings(
+    AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "DATABASE_ALIAS": "postgres"}
+)
+class TestAuditPostgreSQL(TransactionTestCase):
+    reset_sequences = True
+    databases = ["default", "postgres"]
+
+    def test_log_table_created_and_has_insert_row(self):
+        conn = connections["postgres"]
+        with conn.cursor() as c:
+            c.execute("SELECT to_regclass(%s);", ["public.widget_log"])
+            self.assertIsNone(
+                c.fetchone()[0], "widget_log should NOT exist before creating a Widget"
             )
-            self.assertIsNone(c.fetchone())
 
         w = Widget.objects.create(name="H", qty=1)
 
-        # Now the log table must exist and have an 'insert' row
-        with connection.cursor() as c:
-            c.execute(
-                """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                  AND name='widget_log'
-                """
+        # Now the log table must exist
+        with conn.cursor() as c:
+            c.execute("SELECT to_regclass(%s);", ["public.widget_log"])
+            self.assertIsNotNone(
+                c.fetchone()[0], "widget_log should exist after creating a Widget"
             )
-            self.assertIsNotNone(c.fetchone())
+
+            c.execute(
+                "SELECT COUNT(*) FROM public.widget_log WHERE action = %s AND object_pk = %s;",
+                ["insert", str(w.pk)],
+            )
+            self.assertEqual(c.fetchone()[0], 1)
 
         logs = fetch_logs_for("widget")
         self.assertTrue(len(logs) >= 1)

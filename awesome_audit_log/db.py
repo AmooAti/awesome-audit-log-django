@@ -8,8 +8,10 @@ from awesome_audit_log.conf import get_setting
 
 logger = logging.getLogger(__name__)
 
+
 class AuditDBIsNotAvailable(Exception):
     pass
+
 
 class AbstractDatabaseVendor(ABC):
     """Abstract base class for database vendor-specific operations."""
@@ -20,7 +22,7 @@ class AbstractDatabaseVendor(ABC):
         pass
 
     @abstractmethod
-    def get_table_exist_query(self, table_name: str) -> tuple [str, tuple]:
+    def get_table_exist_query(self, table_name: str) -> tuple[str, tuple]:
         """Return a SQL statement to check if a table exists."""
         pass
 
@@ -28,6 +30,11 @@ class AbstractDatabaseVendor(ABC):
     def get_create_table_sql(self, table_name: str) -> str:
         """Return a SQL statement to create a new table."""
         pass
+
+    def parse_table_strings(self, table_name: str) -> str:
+        """Return database specific table/column name."""
+        return table_name
+
 
 class PostgresDatabaseVendor(AbstractDatabaseVendor):
     def _get_json_type(self) -> str:
@@ -66,7 +73,6 @@ class PostgresDatabaseVendor(AbstractDatabaseVendor):
         return create_sql
 
 
-
 class MySQlDatabaseVendor(AbstractDatabaseVendor):
     def __init__(self, connection):
         self.connection = connection
@@ -84,29 +90,33 @@ class MySQlDatabaseVendor(AbstractDatabaseVendor):
         params = (self.connection.settings_dict["NAME"], table_name)
         return query, params
 
-
     def get_create_table_sql(self, table_name: str) -> str:
         json_type = self._get_json_type()
+        t = self.parse_table_strings(table_name)
         create_sql = f"""
-                   CREATE TABLE IF NOT EXISTS {table_name} (
-                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                       action VARCHAR(10) NOT NULL,
-                       object_pk TEXT NOT NULL,
-                       before {json_type},
-                       after {json_type},
-                       changes {json_type},
-                       entry_point VARCHAR(20),
-                       route TEXT,
-                       path TEXT,
-                       method VARCHAR(10),
-                       ip TEXT,
-                       user_id BIGINT,
-                       user_name TEXT,
-                       user_agent TEXT,
-                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                   CREATE TABLE IF NOT EXISTS {t} (
+                       `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+                       `action` VARCHAR(10) NOT NULL,
+                       `object_pk` TEXT NOT NULL,
+                       `before` {json_type},
+                       `after` {json_type},
+                       `changes` {json_type},
+                       `entry_point` VARCHAR(20),
+                       `route` TEXT,
+                       `path` TEXT,
+                       `method` VARCHAR(10),
+                       `ip` TEXT,
+                       `user_id` BIGINT,
+                       `user_name` TEXT,
+                       `user_agent` TEXT,
+                       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                    ) ENGINE=InnoDB;
                    """
         return create_sql
+
+    def parse_table_strings(self, table_name: str) -> str:
+        return f"`{table_name}`"
+
 
 class SQLiteDatabaseVendor(AbstractDatabaseVendor):
     def _get_json_type(self) -> str:
@@ -145,6 +155,7 @@ class SQLiteDatabaseVendor(AbstractDatabaseVendor):
                    """
         return create_sql
 
+
 class AuditDatabaseManager:
     def __init__(self):
         self._connection = None
@@ -165,32 +176,30 @@ class AuditDatabaseManager:
 
     def _get_vendor_for_connection(self):
         vendor_map = {
-            'postgresql': PostgresDatabaseVendor,
-            'mysql': lambda: MySQlDatabaseVendor(self._connection),
-            'sqlite': SQLiteDatabaseVendor,
+            "postgresql": PostgresDatabaseVendor,
+            "mysql": lambda: MySQlDatabaseVendor(self._connection),
+            "sqlite": SQLiteDatabaseVendor,
         }
 
         vendor_class = vendor_map.get(self._connection.vendor, SQLiteDatabaseVendor)
         return vendor_class() if not callable(vendor_class) else vendor_class()
 
-
     def _get_connection(self):
-        alias = get_setting('DATABASE_ALIAS')
+        alias = get_setting("DATABASE_ALIAS")
         if self._connection is not None:
             return self._connection
 
         try:
             connection = connections[alias]
         except ConnectionDoesNotExist as e:
-            if get_setting('RAISE_ERROR_IF_DB_UNAVAILABLE'):
+            if get_setting("RAISE_ERROR_IF_DB_UNAVAILABLE"):
                 raise AuditDBIsNotAvailable from e
             if get_setting("FALLBACK_TO_DEFAULT"):
                 logger.warning("Audit fall backed to default", exc_info=True)
-                connection = connections['default']
+                connection = connections["default"]
             else:
                 logger.warning("Audit db is not available", exc_info=True)
                 return None
-
 
         if not self._test_connection(connection):
             return None
@@ -199,21 +208,20 @@ class AuditDatabaseManager:
         self._vendor = self._get_vendor_for_connection()
         return connection
 
-
     def _test_connection(self, connection) -> bool:
         try:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
             return True
         except OperationalError as e:
-            if get_setting('RAISE_ERROR_IF_DB_UNAVAILABLE'):
+            if get_setting("RAISE_ERROR_IF_DB_UNAVAILABLE"):
                 raise AuditDBIsNotAvailable from e
-            if connection.alias != 'default' and get_setting("FALLBACK_TO_DEFAULT"):
+            if connection.alias != "default" and get_setting("FALLBACK_TO_DEFAULT"):
                 logger.warning(
                     "Audit fall backed to default because of operational error",
-                    exc_info=True
+                    exc_info=True,
                 )
-                connection = connections['default']
+                connection = connections["default"]
                 try:
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT 1")
@@ -221,7 +229,7 @@ class AuditDatabaseManager:
                 except OperationalError as e:
                     logger.critical(
                         "Unexpected error from audit db when fall backed to default",
-                        exc_info=True
+                        exc_info=True,
                     )
                     return False
             else:
@@ -250,19 +258,37 @@ class AuditDatabaseManager:
         if not connection:
             return
 
-        log_table = self.ensure_log_table_for_model_exist(model)
+        log_table = self._vendor.parse_table_strings(
+            self.ensure_log_table_for_model_exist(model)
+        )
+
         if not log_table:
             logger.warning(f"log_table {log_table} does not exist")
             return
 
         cols = [
-            "action", "object_pk", "before", "after", "changes",
-            "entry_point", "route", "path", "method", "ip",
-            "user_id", "user_name", "user_agent"
+            "action",
+            "object_pk",
+            "before",
+            "after",
+            "changes",
+            "entry_point",
+            "route",
+            "path",
+            "method",
+            "ip",
+            "user_id",
+            "user_name",
+            "user_agent",
         ]
+
+        parsed_cols = [self._vendor.parse_table_strings(name) for name in cols]
+
         placeholders = ",".join(["%s"] * len(cols))
 
-        sql = f"INSERT INTO {log_table} ({','.join(cols)}) VALUES ({placeholders})"
+        sql = (
+            f"INSERT INTO {log_table} ({','.join(parsed_cols)}) VALUES ({placeholders})"
+        )
 
         values = [payload.get(c) for c in cols]
 
