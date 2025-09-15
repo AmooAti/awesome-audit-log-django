@@ -9,6 +9,21 @@ packages = [{ include = "awesome_audit_log" }]
 keywords = ["django", "audit", "logging", "audit-log", "log", "changes", "databse-changes"]
 homepage = "https://github.com/AmooAti/awesome-audit-log-django"
 repository = "https://github.com/AmooAti/awesome-audit-log-django"
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
@@ -25,6 +40,6 @@ pre-commit = "^4.3.0"
 mysqlclient = "^2.2.7"
 
 [build-system]
-requires = ["poetry-core>=1.9.0"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
