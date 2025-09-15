@@ -22,10 +22,6 @@ This package is in its early stage development and the following features will b
 4. Mongo DB support
 5. Add management, shell, celery as entry point of logs
 6. Document page!
-7. ✅ Fix dependencies versioning
-8. ✅ linter
-9. ✅ github actions
-10. ✅ For now, you just can opt-in models with app_label. We should add a feature for opt-out and also using module path
 
 ## Compatible With 
 
