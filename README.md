@@ -1,6 +1,9 @@
 # Awesome Audit Log for Django
-
+[![PyPI version](https://img.shields.io/pypi/v/awesome-audit-log-django)](https://pypi.org/project/awesome-audit-log-django/)
 [![codecov](https://codecov.io/github/AmooAti/awesome-audit-log-django/graph/badge.svg?token=D5SCFRSM7H)](https://codecov.io/github/AmooAti/awesome-audit-log-django)
+![Python versions](https://img.shields.io/pypi/pyversions/awesome-audit-log-django)
+![License](https://img.shields.io/pypi/l/awesome-audit-log-django)
+
 
 This is an awesome package to have your models logs in corresponding _log tables.
 
