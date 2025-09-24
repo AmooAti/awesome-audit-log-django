@@ -37,22 +37,37 @@ class AbstractDatabaseVendor(ABC):
 
 
 class PostgresDatabaseVendor(AbstractDatabaseVendor):
+    def __init__(self, connection=None):
+        self.connection = connection
+
     def _get_json_type(self) -> str:
         return "JSONB"
 
+    def _get_schema(self) -> str:
+        """Get the schema from settings or default to 'public'."""
+        configured_schema = get_setting("PG_SCHEMA")
+        if configured_schema:
+            return configured_schema
+
+        return "public"
+
     def get_table_exist_query(self, table_name: str) -> tuple[str, tuple]:
+        schema = self._get_schema()
         query = """
                 SELECT EXISTS (SELECT 1 \
                                FROM information_schema.tables \
                                WHERE table_schema = %s \
                                  AND table_name = %s); \
                 """
-        return query, ("public", table_name)
+        return query, (schema, table_name)
 
     def get_create_table_sql(self, table_name: str) -> str:
         json_type = self._get_json_type()
+        schema = self._get_schema()
+        # Include schema in table name if not default
+        full_table_name = f"{schema}.{table_name}" if schema != "public" else table_name
         create_sql = f"""
-                   CREATE TABLE IF NOT EXISTS {table_name} (
+                   CREATE TABLE IF NOT EXISTS {full_table_name} (
                        id BIGSERIAL PRIMARY KEY,
                        action VARCHAR(10) NOT NULL,
                        object_pk TEXT NOT NULL,
@@ -176,7 +191,7 @@ class AuditDatabaseManager:
 
     def _get_vendor_for_connection(self):
         vendor_map = {
-            "postgresql": PostgresDatabaseVendor,
+            "postgresql": lambda: PostgresDatabaseVendor(self._connection),
             "mysql": lambda: MySQlDatabaseVendor(self._connection),
             "sqlite": SQLiteDatabaseVendor,
         }

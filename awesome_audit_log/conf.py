@@ -3,6 +3,8 @@ from django.conf import settings
 DEFAULTS = {
     "ENABLED": True,
     "DATABASE_ALIAS": "default",
+    # PostgreSQL schema for audit tables (defaults to 'public')
+    "PG_SCHEMA": None,
     "ASYNC": False,
     # "all" or list like ["app_label.ModelA", "app.ModelB"]
     "AUDIT_MODELS": "all",

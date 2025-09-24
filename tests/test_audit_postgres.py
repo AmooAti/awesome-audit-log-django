@@ -18,13 +18,13 @@ except Exception:
 
 
 @pytest.mark.skipif(not psycopg_installed, reason="psycopg/psycopg2 not installed")
-@pytest.mark.django_db(databases=["postgres"])
+@pytest.mark.django_db(databases=["postgres", "postgres_with_different_schema"])
 @override_settings(
     AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "DATABASE_ALIAS": "postgres"}
 )
 class TestAuditPostgreSQL(TransactionTestCase):
     reset_sequences = True
-    databases = ["default", "postgres"]
+    databases = ["default", "postgres", "postgres_with_different_schema"]
 
     def test_log_table_created_and_has_insert_row(self):
         conn = connections["postgres"]
@@ -146,3 +146,43 @@ class TestAuditPostgreSQL(TransactionTestCase):
         ]
 
         self.assertEqual(len(widget_logs), 0)
+
+    @override_settings(
+        AWESOME_AUDIT_LOG={
+            **AWESOME_AUDIT_LOG,
+            "DATABASE_ALIAS": "postgres_with_different_schema",
+            "PG_SCHEMA": "audit_log",
+        }
+    )
+    def test_logs_recorded_on_different_schema(self):
+        conn = connections["postgres_with_different_schema"]
+
+        with conn.cursor() as cursor:
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS audit_log;")
+
+        # Verify the schema exists and the log table doesn't exist yet
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'audit_log' AND table_name = 'widget_log');"
+            )
+            self.assertFalse(
+                cursor.fetchone()[0],
+                "widget_log should NOT exist in audit_log schema before creating a Widget",
+            )
+
+        widget = Widget.objects.create(
+            name="postgres_with_different_schema_widget", qty=2
+        )
+
+        widget_logs = fetch_logs_for("widget")
+        widget_logs = [
+            w
+            for w in widget_logs
+            if w["action"] == "insert" and w["object_pk"] == str(widget.pk)
+        ]
+
+        self.assertEqual(len(widget_logs), 1)
+        self.assertEqual(
+            widget_logs[0]["after"]["name"], "postgres_with_different_schema_widget"
+        )
+        self.assertEqual(widget_logs[0]["after"]["qty"], 2)

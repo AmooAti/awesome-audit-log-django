@@ -89,4 +89,16 @@ DATABASES = {
             "DEPENDENCIES": [],
         },
     },
+    "postgres_with_different_schema": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "test_audit_log",
+        "USER": "postgres",
+        "PASSWORD": "password",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
+        "TEST": {
+            "DEPENDENCIES": [],
+        },
+        "OPTIONS": {"options": "-c search_path=public,audit_log"},
+    },
 }
