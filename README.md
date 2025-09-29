@@ -21,12 +21,10 @@ Supported DBs to store logs:
 
 This package is in its early stage development and the following features will be added ASAP:
 
-1. ✅ Utilizing celery tasks to store audit logs
-2. Release it!
-3. Log rotation
-4. Mongo DB support
-5. Add management, shell, celery as entry point of logs
-6. Document page!
+1. Log rotation
+2. Mongo DB support
+3. Add management, shell, celery as entry point of logs
+4. Document page!
 
 ## Compatible With
 
@@ -35,6 +33,7 @@ This package works on the below listed Django, Python versions and Databases.
 - **Django versions**: 4.2, 5.0, 5.1
 - **Python versions**: 3.10, 3.11, 3.12
 - **Databases**: SQLite, PostgreSQL, MySQL
+- **Celery**: Optional for Async logging
 
 ## Installation
 
