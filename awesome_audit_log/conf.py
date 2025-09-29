@@ -5,6 +5,7 @@ DEFAULTS = {
     "DATABASE_ALIAS": "default",
     # PostgreSQL schema for audit tables (defaults to 'public')
     "PG_SCHEMA": None,
+    # Enable async logging with Celery (requires Celery to be installed and configured)
     "ASYNC": False,
     # "all" or list like ["app_label.ModelA", "app.ModelB"]
     "AUDIT_MODELS": "all",

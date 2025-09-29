@@ -4,7 +4,11 @@ from django.dispatch import receiver
 
 from awesome_audit_log.conf import get_setting
 from awesome_audit_log.context import get_request_ctx
-from awesome_audit_log.db import AuditDatabaseManager
+from awesome_audit_log.tasks import (
+    CELERY_AVAILABLE,
+    insert_audit_log_async,
+    insert_audit_log_sync,
+)
 from awesome_audit_log.utils import diff_dicts, dumps, serialize_instance
 
 
@@ -55,8 +59,7 @@ def _audit_post_save(sender, instance, created, **kwargs):
 
     payload = _complete_request_data(payload)
 
-    _audit_database_manager = AuditDatabaseManager()
-    _audit_database_manager.insert_log_row(sender, payload)
+    _insert_audit_log(sender, payload)
 
 
 @receiver(pre_delete)
@@ -76,8 +79,23 @@ def _audit_pre_delete(sender, instance, **kwargs):
 
     payload = _complete_request_data(payload)
 
-    _audit_database_manager = AuditDatabaseManager()
-    _audit_database_manager.insert_log_row(sender, payload)
+    _insert_audit_log(sender, payload)
+
+
+def _insert_audit_log(sender: models.Model, payload: dict[str, str]) -> None:
+    """
+    Insert audit log either synchronously or asynchronously based on settings.
+
+    Args:
+        sender: Django model class
+        payload: Audit log data dictionary
+    """
+    model_path = f"{sender._meta.app_label}.{sender._meta.model_name}"
+
+    if get_setting("ASYNC") and CELERY_AVAILABLE:
+        insert_audit_log_async.delay(model_path, payload)
+    else:
+        insert_audit_log_sync(sender, payload)
 
 
 def _complete_request_data(payload: dict[str, str]):
