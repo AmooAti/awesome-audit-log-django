@@ -13,7 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "awesome_audit_log.apps.AwesomeAuditLogConfig",
-    "tests.testapp",
+    "tests.fixtures.testapp",
 ]
 
 MIDDLEWARE = [
@@ -24,7 +24,7 @@ MIDDLEWARE = [
     "awesome_audit_log.middleware.RequestEntryPointMiddleware",
 ]
 
-ROOT_URLCONF = "tests.testapp.urls"
+ROOT_URLCONF = "tests.fixtures.testapp.urls"
 USE_TZ = True
 TIME_ZONE = "UTC"
 

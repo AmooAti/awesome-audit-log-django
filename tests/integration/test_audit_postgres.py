@@ -2,9 +2,9 @@ import pytest
 from django.db import connections
 from django.test import TransactionTestCase, override_settings
 
-from tests.conftest import fetch_logs_for
-from tests.settings import AWESOME_AUDIT_LOG
-from tests.testapp.models import Category, Widget
+from tests.config.conftest import fetch_logs_for
+from tests.config.settings import AWESOME_AUDIT_LOG
+from tests.fixtures.testapp.models import Category, Widget
 
 
 psycopg_installed = True
@@ -25,6 +25,41 @@ except Exception:
 class TestAuditPostgreSQL(TransactionTestCase):
     reset_sequences = True
     databases = ["default", "postgres", "postgres_with_different_schema"]
+
+    def setUp(self):
+        """Ensure clean state before each test."""
+        super().setUp()
+        # Clear any existing audit log tables from all configured databases
+        from tests.config.conftest import LOG_TABLE_REGEX
+
+        for alias in self.databases:
+            try:
+                conn = connections[alias]
+                with conn.cursor() as c:
+                    if conn.vendor == "sqlite":
+                        c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                        tables = [row[0] for row in c.fetchall()]
+                    elif conn.vendor == "postgresql":
+                        c.execute(
+                            "SELECT tablename FROM pg_tables WHERE schemaname IN ('public', 'audit_log')"
+                        )
+                        tables = [f'"{row[0]}"' for row in c.fetchall()]
+                    elif conn.vendor == "mysql":
+                        c.execute(
+                            "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()"
+                        )
+                        tables = [row[0] for row in c.fetchall()]
+                    else:
+                        tables = []
+
+                    for table in tables:
+                        if LOG_TABLE_REGEX.fullmatch(table.replace('"', "")):
+                            try:
+                                c.execute(f"DROP TABLE IF EXISTS {table}")
+                            except Exception:
+                                pass  # Table might not exist
+            except Exception:
+                continue  # Database might not be available
 
     def test_log_table_created_and_has_insert_row(self):
         conn = connections["postgres"]

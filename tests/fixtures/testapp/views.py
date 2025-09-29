@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from tests.testapp.models import Widget
+from tests.fixtures.testapp.models import Widget
 
 
 @require_POST

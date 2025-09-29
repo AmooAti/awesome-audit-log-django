@@ -5,10 +5,10 @@ from awesome_audit_log.db import (
     AuditDatabaseManager,
     SQLiteDatabaseVendor,
 )
-from tests.testapp.models import Widget
+from tests.fixtures.testapp.models import Widget
 from pytest import raises
 
-from conftest import fetch_logs_for
+from tests.config.conftest import fetch_logs_for
 
 
 class TestSettings(TestCase):

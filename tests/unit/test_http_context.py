@@ -1,10 +1,11 @@
 import json
 
-from conftest import fetch_logs_for
+from tests.config.conftest import fetch_logs_for
 from django.contrib.auth import get_user_model
 from django.test import Client, TransactionTestCase
 
 User = get_user_model()
+
 
 class TestHttpContext(TransactionTestCase):
     reset_sequences = True

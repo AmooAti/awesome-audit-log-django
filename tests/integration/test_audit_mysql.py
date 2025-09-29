@@ -1,41 +1,93 @@
-from django.db import connection
+import pytest
+from django.db import connections
 from django.test import TransactionTestCase, override_settings
 
-from tests.conftest import fetch_logs_for
-from tests.settings import AWESOME_AUDIT_LOG
-from tests.testapp.models import Category, Widget
+from tests.config.conftest import fetch_logs_for
+from tests.fixtures.testapp.models import Category, Widget
+from tests.config.settings import AWESOME_AUDIT_LOG
+
+mysqlclient_installed = True
+try:
+    import MySQLdb  # noqa: F401
+except Exception:
+    mysqlclient_installed = False
 
 
-class TestAuditBasic(TransactionTestCase):
+@pytest.mark.skipif(not mysqlclient_installed, reason="mysqlclient not installed")
+@override_settings(AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "DATABASE_ALIAS": "mysql"})
+class TestAuditMySQL(TransactionTestCase):
     reset_sequences = True
-    databases = ["default"]
+    databases = ["default", "mysql"]
+
+    def setUp(self):
+        """Ensure clean state before each test."""
+        super().setUp()
+        # Clear any existing audit log tables from all configured databases
+        from tests.config.conftest import LOG_TABLE_REGEX
+
+        for alias in self.databases:
+            try:
+                conn = connections[alias]
+                with conn.cursor() as c:
+                    if conn.vendor == "sqlite":
+                        c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                        tables = [row[0] for row in c.fetchall()]
+                    elif conn.vendor == "postgresql":
+                        c.execute(
+                            "SELECT tablename FROM pg_tables WHERE schemaname IN ('public', 'audit_log')"
+                        )
+                        tables = [f'"{row[0]}"' for row in c.fetchall()]
+                    elif conn.vendor == "mysql":
+                        c.execute(
+                            "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()"
+                        )
+                        tables = [f"`{row[0]}`" for row in c.fetchall()]
+                    else:
+                        tables = []
+
+                    for table in tables:
+                        clean_table = table.replace('"', "").replace("`", "")
+                        if LOG_TABLE_REGEX.fullmatch(clean_table):
+                            try:
+                                c.execute(f"DROP TABLE IF EXISTS {table}")
+                            except Exception:
+                                pass  # Table might not exist
+            except Exception:
+                continue  # Database might not be available
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Important: close old connections that may have been opened before the override
+        connections.close_all()
 
     def test_log_table_created_on_first_user(self):
         # Ensure the log table does not exist initially
-        with connection.cursor() as c:
+        conn = connections["mysql"]
+        with conn.cursor() as c:
             c.execute(
                 """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                AND name='widget_log'
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = 'widget_log'
                 """
             )
-            self.assertIsNone(c.fetchone())
+            self.assertEqual(c.fetchone()[0], 0)
 
         w = Widget.objects.create(name="H", qty=1)
 
         # Now the log table must exist and have an 'insert' row
-        with connection.cursor() as c:
+        with conn.cursor() as c:
             c.execute(
                 """
-                SELECT name
-                FROM sqlite_master
-                WHERE type='table'
-                  AND name='widget_log'
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = 'widget_log'
                 """
             )
-            self.assertIsNotNone(c.fetchone())
+            self.assertEqual(c.fetchone()[0], 1)
 
         logs = fetch_logs_for("widget")
         self.assertTrue(len(logs) >= 1)
@@ -131,24 +183,6 @@ class TestAuditBasic(TransactionTestCase):
             r
             for r in widget_logs
             if r["action"] == "insert" and r["object_pk"] == str(widget.pk)
-        ]
-
-        self.assertEqual(len(widget_logs), 0)
-
-    @override_settings(
-        AWESOME_AUDIT_LOG={
-            **AWESOME_AUDIT_LOG,
-            "NOT_AUDIT_MODELS": ["tests_testapp.widget"],
-        }
-    )
-    def test_opt_out_models_not_logged_for_deleted(self):
-        widget = Widget.objects.create(name="C", qty=2)
-        widget.delete()
-        widget_logs = fetch_logs_for("widget")
-        widget_logs = [
-            r
-            for r in widget_logs
-            if r["action"] == "delete" and r["object_pk"] == str(widget.pk)
         ]
 
         self.assertEqual(len(widget_logs), 0)
