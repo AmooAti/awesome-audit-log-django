@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from django.db import models
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
@@ -55,6 +57,7 @@ def _audit_post_save(sender, instance, created, **kwargs):
         "before": dumps(before),
         "after": dumps(after),
         "changes": dumps(diff_dicts(before, after)),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
     payload = _complete_request_data(payload)
@@ -75,6 +78,7 @@ def _audit_pre_delete(sender, instance, **kwargs):
         "changes": dumps(
             {k: {"from": v, "to": None} for k, v in (before or {}).items()}
         ),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
     payload = _complete_request_data(payload)

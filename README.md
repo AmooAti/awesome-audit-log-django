@@ -112,6 +112,13 @@ AWESOME_AUDIT_LOG = {
 - Works with any Celery broker (Redis, RabbitMQ, database, etc.)
 - No additional configuration is required in this package - it uses your existing Celery setup
 - Async logging is disabled by default for backward compatibility
+- **Important**: Timestamps are captured at event time, not at database insert time, ensuring accurate audit logs even with async processing
+
+### Timestamp Accuracy
+
+This package ensures that audit log timestamps (`created_at`) accurately reflect when events occur, not when they're saved to the database. This is especially important for async logging where there may be a delay between the event and database insertion.
+
+See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) if you're upgrading from a version prior to 1.0.0.
 
 ## Development
 

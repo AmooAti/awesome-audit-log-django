@@ -82,7 +82,7 @@ class PostgresDatabaseVendor(AbstractDatabaseVendor):
                        user_id BIGINT,
                        user_name TEXT,
                        user_agent TEXT,
-                       created_at TIMESTAMPTZ DEFAULT NOW()
+                       created_at TIMESTAMPTZ NOT NULL
                    );
                    """
         return create_sql
@@ -124,7 +124,7 @@ class MySQlDatabaseVendor(AbstractDatabaseVendor):
                        `user_id` BIGINT,
                        `user_name` TEXT,
                        `user_agent` TEXT,
-                       `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                       `created_at` TIMESTAMP NOT NULL
                    ) ENGINE=InnoDB;
                    """
         return create_sql
@@ -165,7 +165,7 @@ class SQLiteDatabaseVendor(AbstractDatabaseVendor):
                        user_id INTEGER,
                        user_name TEXT,
                        user_agent TEXT,
-                       created_at TEXT DEFAULT (datetime('now'))
+                       created_at TEXT NOT NULL
                    );
                    """
         return create_sql
@@ -295,6 +295,7 @@ class AuditDatabaseManager:
             "user_id",
             "user_name",
             "user_agent",
+            "created_at",
         ]
 
         parsed_cols = [self._vendor.parse_table_strings(name) for name in cols]
