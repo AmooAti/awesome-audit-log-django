@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "awesome_audit_log.apps.AwesomeAuditLogConfig",
+    "products",
 ]
 
 MIDDLEWARE = [
@@ -167,6 +168,16 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "example.tasks": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "celery": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
@@ -180,6 +191,7 @@ AWESOME_AUDIT_LOG = {
     "NOT_AUDIT_MODELS": None,
     "CAPTURE_HTTP": True,
     "CAPTURE_COMMANDS": True,
+    "CAPTURE_CELERY": True,
     # set to False means if audit db is unavailable,
     # silently skip logging (with a warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": True,
@@ -187,3 +199,10 @@ AWESOME_AUDIT_LOG = {
     # this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
     "FALLBACK_TO_DEFAULT": False,
 }
+
+CELERY_BROKER_URL = "redis://localhost:6380/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6380/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE

@@ -15,6 +15,9 @@ class AwesomeAuditLogConfig(AppConfig):
             if get_setting("CAPTURE_COMMANDS"):
                 self._setup_command_auditing()
 
+            if get_setting("CAPTURE_CELERY"):
+                self._setup_celery_auditing()
+
     def _setup_command_auditing(self):
         """
         Wrap Django's BaseCommand.execute() to capture context.
@@ -92,6 +95,69 @@ class AwesomeAuditLogConfig(AppConfig):
             return " ".join(args_list)
 
         BaseCommand.execute = execute_with_audit
+
+    def _setup_celery_auditing(self):
+        """
+        Wrap Celery's task execution to capture context using signals.
+        Signals are only fired in worker processes, not when calling task.run() directly.
+        """
+        try:
+            from celery import signals
+        except ImportError:
+            return
+
+        from awesome_audit_log.context import (
+            RequestContext,
+            clear_request_ctx,
+            set_request_ctx,
+        )
+        import os
+
+        def get_task_context(task):
+            task_name = getattr(task, "name", None) or getattr(task, "__name__", None)
+            task_module = getattr(task, "__module__", None)
+
+            task_info = f"task={task_name}"
+            if task_module:
+                task_info = f"{task_info} module={task_module}"
+
+            return RequestContext(
+                entry_point="celery_task",
+                path=task_name.split(".")[-1] if task_name else None,
+                route=task_name,
+                method="run",
+                ip=None,
+                user_id=None,
+                user_name=os.getenv("USER") or os.getenv("USERNAME"),
+                user_agent=task_info,
+            )
+
+        @signals.task_prerun.connect
+        def task_prerun_handler(
+            sender=None, task_id=None, task=None, args=None, kwargs=None, **kwds
+        ):
+            if (
+                hasattr(task, "name")
+                and task.name
+                and "insert_audit_log_async" in task.name
+            ):
+                return
+            set_request_ctx(get_task_context(task))
+
+        @signals.task_postrun.connect
+        def task_postrun_handler(
+            sender=None,
+            task_id=None,
+            task=None,
+            args=None,
+            kwargs=None,
+            retval=None,
+            state=None,
+            **kwds,
+        ):
+            clear_request_ctx()
+
+        self._celery_handlers = (task_prerun_handler, task_postrun_handler)
 
 
 class ImproperlyConfiguredAuditDB(Exception):

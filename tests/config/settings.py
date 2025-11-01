@@ -36,6 +36,8 @@ AWESOME_AUDIT_LOG = {
     # "all" or list like ["app_label.ModelA", "app.ModelB"]
     "AUDIT_MODELS": "all",
     "CAPTURE_HTTP": True,
+    "CAPTURE_COMMANDS": True,
+    "CAPTURE_CELERY": True,
     # set to False means if audit db is unavailable, silently skip logging (with a
     # warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": False,

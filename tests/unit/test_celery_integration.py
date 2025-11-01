@@ -89,19 +89,17 @@ class CeleryIntegrationTestCase(TestCase):
         mock_instance = MagicMock()
         mock_audit_manager.return_value = mock_instance
 
-        mock_task = MagicMock()
-        mock_task.request.retries = 0
-
-        insert_audit_log_async(mock_task, "tests_testapp.widget", self.payload)
+        insert_audit_log_async("tests_testapp.widget", self.payload)
 
         mock_get_model.assert_called_once_with("tests_testapp", "widget")
         mock_audit_manager.assert_called_once()
         mock_instance.insert_log_row.assert_called_once_with(mock_model, self.payload)
 
+    @patch("awesome_audit_log.tasks.insert_audit_log_async.retry")
     @patch("awesome_audit_log.tasks.apps.get_model")
     @patch("awesome_audit_log.db.AuditDatabaseManager")
     def test_insert_audit_log_async_retry_on_failure(
-        self, mock_audit_manager, mock_get_model
+        self, mock_audit_manager, mock_get_model, mock_retry
     ):
         """Test that async task retries on failure."""
         mock_model = MagicMock()
@@ -110,27 +108,26 @@ class CeleryIntegrationTestCase(TestCase):
         mock_audit_manager.return_value = mock_instance
 
         mock_instance.insert_log_row.side_effect = Exception("Database error")
-
-        mock_task = MagicMock()
-        mock_task.request.retries = 0
+        mock_retry.side_effect = Exception("Retry exception")
 
         with pytest.raises(Exception):
-            insert_audit_log_async(mock_task, "tests_testapp.widget", self.payload)
+            insert_audit_log_async("tests_testapp.widget", self.payload)
 
-        mock_task.retry.assert_called_once()
+        mock_retry.assert_called_once()
 
+    @patch("awesome_audit_log.tasks.insert_audit_log_async.retry")
     @patch("awesome_audit_log.tasks.apps.get_model")
-    def test_insert_audit_log_async_invalid_model_path(self, mock_get_model):
+    def test_insert_audit_log_async_invalid_model_path(
+        self, mock_get_model, mock_retry
+    ):
         """Test that async task handles invalid model paths gracefully."""
         mock_get_model.side_effect = Exception("Model not found")
-
-        mock_task = MagicMock()
-        mock_task.request.retries = 0
+        mock_retry.side_effect = Exception("Retry exception")
 
         with pytest.raises(Exception):
-            insert_audit_log_async(mock_task, "invalid.Model", self.payload)
+            insert_audit_log_async("invalid.Model", self.payload)
 
-        mock_task.retry.assert_called_once()
+        mock_retry.assert_called_once()
 
     @override_settings(AWESOME_AUDIT_LOG={"ASYNC": True})
     @patch("awesome_audit_log.signals.insert_audit_log_async")
@@ -147,3 +144,61 @@ class CeleryIntegrationTestCase(TestCase):
             widget.delete()
 
             self.assertEqual(mock_async.delay.call_count, 3)
+
+
+class CeleryEntryPointTestCase(TestCase):
+    """Test Celery task entry point context capture."""
+
+    @override_settings(AWESOME_AUDIT_LOG={"CAPTURE_CELERY": True})
+    def test_celery_task_captures_context_in_signal(self):
+        """Test that Celery task signals set audit context properly."""
+        try:
+            from celery import Celery, signals
+            from awesome_audit_log.context import get_request_ctx
+
+            app = Celery("test")
+            context_captured = []
+
+            @signals.task_prerun.connect
+            def test_handler(sender=None, task_id=None, task=None, **kwargs):
+                ctx = get_request_ctx()
+                context_captured.append(ctx)
+
+            @app.task(name="test.celery_task")
+            def dummy_task():
+                pass
+
+            dummy_task.apply()
+
+            self.assertEqual(len(context_captured), 1)
+            self.assertIsNotNone(context_captured[0])
+            self.assertEqual(context_captured[0].entry_point, "celery_task")
+            self.assertEqual(context_captured[0].route, "test.celery_task")
+        except ImportError:
+            self.skipTest("Celery not available")
+
+    @override_settings(AWESOME_AUDIT_LOG={"CAPTURE_CELERY": True})
+    def test_audit_logging_task_is_skipped(self):
+        """Test that insert_audit_log_async task doesn't capture its own context."""
+        try:
+            from celery import Celery, signals
+            from awesome_audit_log.context import get_request_ctx
+
+            app = Celery("test")
+            context_captured = []
+
+            @signals.task_prerun.connect
+            def test_handler(sender=None, task_id=None, task=None, **kwargs):
+                ctx = get_request_ctx()
+                context_captured.append(ctx)
+
+            @app.task(name="awesome_audit_log.tasks.insert_audit_log_async")
+            def dummy_audit_task():
+                pass
+
+            dummy_audit_task.apply()
+
+            self.assertEqual(len(context_captured), 1)
+            self.assertIsNone(context_captured[0])
+        except ImportError:
+            self.skipTest("Celery not available")

@@ -23,8 +23,7 @@ This package is in its early stage development and the following features will b
 
 1. Log rotation
 2. Mongo DB support
-3. Add management, shell, celery as entry point of logs
-4. Document page!
+3. Document page!
 
 ## Compatible With
 
@@ -70,6 +69,10 @@ AWESOME_AUDIT_LOG = {
     # like AUDIT_MODELS but for opt-out, useful when AUDIT_MODELS set to all
     "NOT_AUDIT_MODELS": None,
     "CAPTURE_HTTP": True,
+    # Capture context for management commands
+    "CAPTURE_COMMANDS": True,
+    # Capture context for Celery tasks
+    "CAPTURE_CELERY": True,
     # set to False means if audit db is unavailable, silently skip logging (with a warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": False,
     # if audit alias missing/unavailable, use 'default' intentionally, this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
@@ -119,6 +122,22 @@ AWESOME_AUDIT_LOG = {
 This package ensures that audit log timestamps (`created_at`) accurately reflect when events occur, not when they're saved to the database. This is especially important for async logging where there may be a delay between the event and database insertion.
 
 See [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) if you're upgrading from a version prior to 1.0.0.
+
+## Entry Point Detection
+
+This package automatically captures audit context from different entry points in your application:
+
+### Supported Entry Points
+
+- **HTTP Requests**: Automatically captured via middleware (when `CAPTURE_HTTP` is enabled)
+- **Management Commands**: Automatically captured for all Django management commands (when `CAPTURE_COMMANDS` is enabled)
+- **Celery Tasks**: Automatically captured for all Celery tasks and Celery Beat scheduled tasks (when `CAPTURE_CELERY` is enabled)
+
+Each audit log entry includes the `entry_point` field indicating the source:
+
+- `http` - HTTP requests
+- `management_command` - Django management commands
+- `celery_task` - Celery tasks and Celery Beat scheduled tasks
 
 ## Development
 

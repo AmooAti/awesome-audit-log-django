@@ -46,3 +46,21 @@ class TestSettings(TestCase):
         ]
 
         self.assertEqual(len(widget_logs), 0)
+
+    def test_capture_celery_setting_exists(self):
+        """Test that CAPTURE_CELERY setting exists."""
+        from awesome_audit_log.conf import DEFAULTS, get_setting
+
+        self.assertIn("CAPTURE_CELERY", DEFAULTS)
+        self.assertTrue(get_setting("CAPTURE_CELERY"))
+
+    @override_settings(
+        AWESOME_AUDIT_LOG={
+            "CAPTURE_CELERY": False,
+        }
+    )
+    def test_capture_celery_setting_can_be_disabled(self):
+        """Test that CAPTURE_CELERY can be disabled."""
+        from awesome_audit_log.conf import get_setting
+
+        self.assertFalse(get_setting("CAPTURE_CELERY"))
