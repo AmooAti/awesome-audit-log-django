@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "awesome-audit-log-django"
-version = "1.0.0"
+version = "1.1.0"
 description = "Per-model audit logs to TABLENAME_log with entry-point capture (HTTP/management/shell/celery)"
 authors = ["AmooAti <adhamiamirhossein@gmail.com>"]
 license = "MIT"
