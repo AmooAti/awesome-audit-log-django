@@ -12,6 +12,8 @@ DEFAULTS = {
     # like AUDIT_MODELS but for opt-out, useful when AUDIT_MODELS set to all
     "NOT_AUDIT_MODELS": None,
     "CAPTURE_HTTP": True,
+    # Capture context for management commands
+    "CAPTURE_COMMANDS": True,
     # set to False means if audit db is unavailable,
     # silently skip logging (with a warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": False,

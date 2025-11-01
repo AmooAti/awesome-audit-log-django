@@ -87,9 +87,9 @@ DATABASES = {
         # 'HOST': '127.0.0.1',
         # 'PORT': '3306',
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "my_database",
-        "USER": "oscar_user",
-        "PASSWORD": "oscar_pass",
+        "NAME": "test_audit_log",
+        "USER": "postgres",
+        "PASSWORD": "password",
         "HOST": "127.0.0.1",
         "PORT": "5432",
     },
@@ -179,6 +179,7 @@ AWESOME_AUDIT_LOG = {
     # like AUDIT_MODELS but for opt-out, useful when AUDIT_MODELS set to all
     "NOT_AUDIT_MODELS": None,
     "CAPTURE_HTTP": True,
+    "CAPTURE_COMMANDS": True,
     # set to False means if audit db is unavailable,
     # silently skip logging (with a warning) instead of raising
     "RAISE_ERROR_IF_DB_UNAVAILABLE": True,
