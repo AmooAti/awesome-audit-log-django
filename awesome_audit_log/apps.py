@@ -82,7 +82,7 @@ class AwesomeAuditLogConfig(AppConfig):
             relevant_options = {
                 k: v
                 for k, v in options.items()
-                if k not in ignored_keys and v is not None and v and v != ""
+                if k not in ignored_keys and v is not None
             }
 
             if not relevant_options:

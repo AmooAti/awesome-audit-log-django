@@ -79,6 +79,34 @@ class TestCommandContext(TestCase):
         self.assertIn("flag=True", context_during_execution.user_agent)
         self.assertNotIn("verbosity", context_during_execution.user_agent)
 
+    def test_context_includes_falsy_command_args(self):
+        """Test that context includes falsy command arguments (False, 0, empty collections)."""
+        context_during_execution = None
+
+        class TestCommand(BaseCommand):
+            def add_arguments(self, parser):
+                parser.add_argument("--count", type=int)
+                parser.add_argument("--enabled", type=bool)
+                parser.add_argument("--items", nargs="*", default=[])
+
+            def handle(self, *args, **options):
+                nonlocal context_during_execution
+                context_during_execution = get_request_ctx()
+
+        cmd = TestCommand()
+        cmd.execute(
+            count=0,
+            enabled=False,
+            items=[],
+            verbosity=1,
+        )
+
+        self.assertIsNotNone(context_during_execution.user_agent)
+        self.assertIn("count=0", context_during_execution.user_agent)
+        self.assertIn("enabled=False", context_during_execution.user_agent)
+        self.assertIn("items=[]", context_during_execution.user_agent)
+        self.assertNotIn("verbosity", context_during_execution.user_agent)
+
     def test_context_includes_system_user(self):
         """Test that context includes system user from environment variables."""
         context_during_execution = None
