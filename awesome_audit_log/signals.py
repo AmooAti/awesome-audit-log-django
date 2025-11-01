@@ -26,7 +26,6 @@ def _should_audit_model(model: models.Model) -> bool:
     models_opt = get_setting("AUDIT_MODELS")
     if models_opt == "all":
         return True
-    print(label in set(models_opt or []))
     return label in set(models_opt or [])
 
 
