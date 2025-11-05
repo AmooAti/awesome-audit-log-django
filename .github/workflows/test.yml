@@ -34,8 +34,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
-        django-version: ["4.2", "5.0", "5.1", "5.2"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        django-version: ["4.0", "4.1", "4.2", "5.0", "5.1", "5.2"]
 
     steps:
     - uses: actions/checkout@v4
