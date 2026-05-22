@@ -27,16 +27,16 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
-Django = ">=5.0"
+python = ">=3.10,<3.15"
+django = ">=5.0,<7.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3"
+pytest = "^9.0"
 pytest-django = "^4.9"
 psycopg = { extras = ["binary"], version = "^3.2.9" }
 ruff = "^0.12.11"
 coverage = "^7.10.6"
-pytest-cov = "^6.2.1"
+pytest-cov = "^7.1.0"
 pre-commit = "^4.3.0"
 mysqlclient = "^2.2.7"
 celery = "^5.5.3"
