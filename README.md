@@ -5,7 +5,7 @@
 ![Python versions](https://img.shields.io/pypi/pyversions/awesome-audit-log-django)
 ![License](https://img.shields.io/pypi/l/awesome-audit-log-django)
 
-This is an awesome package to have your models logs in corresponding \_log tables.
+Django audit logging that writes each model's history to its own table, with optional async logging via Celery.
 
 Having a single model/table as audit storage can cause heavy db operation and useless for large applications.
 
@@ -19,7 +19,7 @@ Supported DBs to store logs:
 2. MySQL
 3. SQLite
 
-This package is in its early stage development and the following features will be added ASAP:
+Planned Roadmap:
 
 1. Log rotation
 2. Mongo DB support
