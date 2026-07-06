@@ -7,7 +7,7 @@
 
 Django audit logging that writes each model's history to its own table, with optional async logging via Celery.
 
-Having a single model/table as audit storage can cause heavy db operation and useless for large applications.
+Having a single model/table as audit storage can cause heavy DB load and doesn't scale well for large applications.
 
 With this package you will have each model log in a separate table which can be beneficial if you want to truncate a specific model logs or run a query on them.
 
