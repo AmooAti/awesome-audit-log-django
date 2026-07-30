@@ -1,7 +1,7 @@
 from django.db import connection
 from django.test import TransactionTestCase, override_settings
 
-from tests.config.conftest import fetch_logs_for
+from tests.helpers import fetch_logs_for
 from tests.config.settings import AWESOME_AUDIT_LOG
 from tests.fixtures.testapp.models import Category, Widget
 
@@ -9,19 +9,6 @@ from tests.fixtures.testapp.models import Category, Widget
 class TestAuditBasic(TransactionTestCase):
     reset_sequences = True
     databases = ["default"]
-
-    def setUp(self):
-        """Ensure clean state before each test."""
-        super().setUp()
-        # Clear any existing audit log tables
-        from tests.config.conftest import LOG_TABLE_REGEX
-
-        with connection.cursor() as c:
-            c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row[0] for row in c.fetchall()]
-            for table in tables:
-                if LOG_TABLE_REGEX.fullmatch(table):
-                    c.execute(f"DROP TABLE IF EXISTS {table}")
 
     def test_log_table_created_on_first_user(self):
         # Ensure the log table does not exist initially

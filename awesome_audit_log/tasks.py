@@ -3,7 +3,7 @@ Celery tasks for async audit logging.
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from django.apps import apps
 from django.db import models
@@ -26,7 +26,7 @@ except ImportError:
 
 
 @shared_task(bind=True, max_retries=3)
-def insert_audit_log_async(self, model_path: str, payload: Dict[str, Any]) -> None:
+def insert_audit_log_async(self, model_path: str, payload: dict[str, Any]) -> None:
     """
     Async task to insert audit log entry.
 
@@ -53,7 +53,7 @@ def insert_audit_log_async(self, model_path: str, payload: Dict[str, Any]) -> No
         raise self.retry(countdown=60 * (2**self.request.retries), exc=exc)
 
 
-def insert_audit_log_sync(model: models.Model, payload: Dict[str, Any]) -> None:
+def insert_audit_log_sync(model: models.Model, payload: dict[str, Any]) -> None:
     """
     Synchronous audit log insertion (fallback when Celery is not available).
 
@@ -65,3 +65,32 @@ def insert_audit_log_sync(model: models.Model, payload: Dict[str, Any]) -> None:
 
     audit_manager = AuditDatabaseManager()
     audit_manager.insert_log_row(model, payload)
+
+
+@shared_task(bind=True, max_retries=3)
+def insert_audit_logs_async(
+    self, model_path: str, payloads: list[dict[str, Any]]
+) -> None:
+    """Async task to insert a batch of audit log entries in one round-trip."""
+    try:
+        app_label, model_name = model_path.split(".")
+        model_class = apps.get_model(app_label, model_name)
+
+        from awesome_audit_log.db import AuditDatabaseManager
+
+        AuditDatabaseManager().insert_log_rows(model_class, payloads)
+
+        logger.debug(
+            f"Successfully inserted {len(payloads)} audit logs for {model_path}"
+        )
+
+    except Exception as exc:
+        logger.error(f"Failed to insert audit logs for {model_path}: {exc}")
+        raise self.retry(countdown=60 * (2**self.request.retries), exc=exc)
+
+
+def insert_audit_logs_sync(model: models.Model, payloads: list[dict[str, Any]]) -> None:
+    """Synchronous batch audit insertion (fallback when Celery is unavailable)."""
+    from awesome_audit_log.db import AuditDatabaseManager
+
+    AuditDatabaseManager().insert_log_rows(model, payloads)

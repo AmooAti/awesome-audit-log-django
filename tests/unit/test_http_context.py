@@ -1,6 +1,6 @@
 import json
 
-from tests.config.conftest import fetch_logs_for
+from tests.helpers import fetch_logs_for
 from django.contrib.auth import get_user_model
 from django.test import Client, TransactionTestCase
 

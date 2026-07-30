@@ -48,7 +48,8 @@ class TimestampAccuracyTestCase(TestCase):
                 with override_settings(
                     AWESOME_AUDIT_LOG={**AWESOME_AUDIT_LOG, "ASYNC": True}
                 ):
-                    Widget.objects.create(name="Async Widget", qty=5)
+                    with self.captureOnCommitCallbacks(execute=True):
+                        Widget.objects.create(name="Async Widget", qty=5)
 
                     call_args = mock_insert_async.delay.call_args
                     payload = call_args[0][1]
