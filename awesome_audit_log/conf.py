@@ -22,6 +22,9 @@ DEFAULTS = {
     # if audit alias missing/unavailable, use 'default' intentionally,
     # this requires RAISE_ERROR_IF_DB_UNAVAILABLE is set to False
     "FALLBACK_TO_DEFAULT": False,
+    # rows per chunk when the bulk helpers snapshot and refetch a large queryset.
+    # None derives it from the backend's placeholder limit.
+    "BULK_CHUNK_SIZE": None,
 }
 
 

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
@@ -10,6 +10,8 @@ from awesome_audit_log.tasks import (
     CELERY_AVAILABLE,
     insert_audit_log_async,
     insert_audit_log_sync,
+    insert_audit_logs_async,
+    insert_audit_logs_sync,
 )
 from awesome_audit_log.utils import diff_dicts, dumps, serialize_instance
 
@@ -96,9 +98,31 @@ def _insert_audit_log(sender: models.Model, payload: dict[str, str]) -> None:
     model_path = f"{sender._meta.app_label}.{sender._meta.model_name}"
 
     if get_setting("ASYNC") and CELERY_AVAILABLE:
-        insert_audit_log_async.delay(model_path, payload)
+        _dispatch_on_commit(lambda: insert_audit_log_async.delay(model_path, payload))
     else:
         insert_audit_log_sync(sender, payload)
+
+
+def _insert_audit_logs(sender: models.Model, payloads: list[dict]) -> None:
+    """Insert a batch of audit rows for one bulk operation in a single write."""
+    if not payloads:
+        return
+
+    model_path = f"{sender._meta.app_label}.{sender._meta.model_name}"
+
+    if get_setting("ASYNC") and CELERY_AVAILABLE:
+        _dispatch_on_commit(lambda: insert_audit_logs_async.delay(model_path, payloads))
+    else:
+        insert_audit_logs_sync(sender, payloads)
+
+
+def _dispatch_on_commit(fn) -> None:
+    """Run ``fn`` after the surrounding transaction commits (or now, if none),
+    so a rolled-back change is never logged."""
+    if transaction.get_connection().in_atomic_block:
+        transaction.on_commit(fn)
+    else:
+        fn()
 
 
 def _complete_request_data(payload: dict[str, str]):

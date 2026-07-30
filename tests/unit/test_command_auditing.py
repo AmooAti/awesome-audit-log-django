@@ -130,18 +130,6 @@ class TestCommandContext(TestCase):
 class TestCommandAuditing(TransactionTestCase):
     """Test that database changes from commands are automatically audited."""
 
-    def setUp(self):
-        """Clean up audit log tables before each test."""
-        super().setUp()
-        from tests.config.conftest import LOG_TABLE_REGEX
-
-        with connection.cursor() as c:
-            c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row[0] for row in c.fetchall()]
-            for table in tables:
-                if LOG_TABLE_REGEX.fullmatch(table):
-                    c.execute(f"DROP TABLE IF EXISTS {table}")
-
     def _get_audit_log(self, object_pk, action=None):
         """Helper method to retrieve audit log entries."""
         query = "SELECT entry_point, action FROM widget_log WHERE object_pk = ?"

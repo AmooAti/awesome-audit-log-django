@@ -8,7 +8,7 @@ from awesome_audit_log.db import (
 from tests.fixtures.testapp.models import Widget
 from pytest import raises
 
-from tests.config.conftest import fetch_logs_for
+from tests.helpers import fetch_logs_for
 
 
 class TestSettings(TestCase):

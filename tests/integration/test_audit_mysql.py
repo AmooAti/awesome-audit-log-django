@@ -2,7 +2,7 @@ import pytest
 from django.db import connections
 from django.test import TransactionTestCase, override_settings
 
-from tests.config.conftest import fetch_logs_for
+from tests.helpers import fetch_logs_for
 from tests.fixtures.testapp.models import Category, Widget
 from tests.config.settings import AWESOME_AUDIT_LOG
 
@@ -18,42 +18,6 @@ except Exception:
 class TestAuditMySQL(TransactionTestCase):
     reset_sequences = True
     databases = ["default", "mysql"]
-
-    def setUp(self):
-        """Ensure clean state before each test."""
-        super().setUp()
-        # Clear any existing audit log tables from all configured databases
-        from tests.config.conftest import LOG_TABLE_REGEX
-
-        for alias in self.databases:
-            try:
-                conn = connections[alias]
-                with conn.cursor() as c:
-                    if conn.vendor == "sqlite":
-                        c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-                        tables = [row[0] for row in c.fetchall()]
-                    elif conn.vendor == "postgresql":
-                        c.execute(
-                            "SELECT tablename FROM pg_tables WHERE schemaname IN ('public', 'audit_log')"
-                        )
-                        tables = [f'"{row[0]}"' for row in c.fetchall()]
-                    elif conn.vendor == "mysql":
-                        c.execute(
-                            "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()"
-                        )
-                        tables = [f"`{row[0]}`" for row in c.fetchall()]
-                    else:
-                        tables = []
-
-                    for table in tables:
-                        clean_table = table.replace('"', "").replace("`", "")
-                        if LOG_TABLE_REGEX.fullmatch(clean_table):
-                            try:
-                                c.execute(f"DROP TABLE IF EXISTS {table}")
-                            except Exception:
-                                pass  # Table might not exist
-            except Exception:
-                continue  # Database might not be available
 
     @classmethod
     def setUpClass(cls):

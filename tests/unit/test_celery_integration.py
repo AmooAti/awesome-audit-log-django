@@ -43,8 +43,9 @@ class CeleryIntegrationTestCase(TestCase):
         mock_async.delay = MagicMock()
 
         with patch("awesome_audit_log.signals.CELERY_AVAILABLE", True):
-            _insert_audit_log(self.model, self.payload)
-            # Check that async was called and sync was not
+            with self.captureOnCommitCallbacks(execute=True):
+                _insert_audit_log(self.model, self.payload)
+            # Check that async was called (on commit) and sync was not
             mock_async.delay.assert_called_once_with(
                 "tests_testapp.widget", self.payload
             )
@@ -136,12 +137,13 @@ class CeleryIntegrationTestCase(TestCase):
         mock_async.delay = MagicMock()
 
         with patch("awesome_audit_log.signals.CELERY_AVAILABLE", True):
-            widget = Widget.objects.create(name="Test Widget", qty=10)
+            with self.captureOnCommitCallbacks(execute=True):
+                widget = Widget.objects.create(name="Test Widget", qty=10)
 
-            widget.name = "Updated Widget"
-            widget.save()
+                widget.name = "Updated Widget"
+                widget.save()
 
-            widget.delete()
+                widget.delete()
 
             self.assertEqual(mock_async.delay.call_count, 3)
 
